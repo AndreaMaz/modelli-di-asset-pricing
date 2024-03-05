@@ -3,7 +3,6 @@ package it.univr.controlledmarkovchains.valueiteration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.DoubleBinaryOperator;
 
 import it.univr.usefulmethodsarrays.UsefulMethodsForArrays;
 
@@ -22,6 +21,9 @@ import it.univr.usefulmethodsarrays.UsefulMethodsForArrays;
  */
 public abstract class ValueIteration {
 	
+	
+	//TO BE GIVEN IN THE CONSTRUCTOR 
+	
 	//the possible states of the system
 	private double[] states;
 	
@@ -31,19 +33,22 @@ public abstract class ValueIteration {
 	//the discount factor gamma in the notes
 	private double discountFactor;
 	
-	//the running reward function: this gives f^a(x) in the notes
-	private DoubleBinaryOperator runningRewardFunction;
+	//it will be used to check if a state index corresponds to an absorbing state
+	private List<Integer> absorbingStatesIndicesAsList;
 	
 	/*
 	 * The iterations stop when the absolute value of the difference between the new and past values of the value
 	 * function is smaller than requiredPrecision for all the entries
-	 */
+	 */ 
 	private double requiredPrecision;
+	
+	
+	//TO BE FILLED/COMPUTED
 	
 	//this array will contain the value function for every state, that is, the maximized values
 	private double[] valueFunctions;
 	
-	//the optimal actions for every state
+	//this array will contain the optimal actions for every state
 	private double[] optimalActions;
 	
 	
@@ -59,8 +64,7 @@ public abstract class ValueIteration {
 	private ArrayList<double[]> updatedValueFunctions = new ArrayList<double[]>();
 	
 	
-	//it will be used to check if a state index corresponds to an absorbing state
-	List<Integer> absorbingStatesIndicesAsList;
+
 	
 	/**
 	 * It constructs an object to solve a stochastic control problem in the setting of controlled Markov chains
@@ -72,21 +76,19 @@ public abstract class ValueIteration {
 	 * @param absorbingStatesIndices, the indices of states which are absorbing: for example, for the gambler problem
 	 * 		  they are 0 and the last index.
 	 * @param discountFactor, the discount factor gamma in the notes
-	 * @param runningRewardFunction, the running reward function: this gives f^a(x) in the notes
 	 * @param requiredPrecision, the iterations stop when the absolute value of the difference between the new and past
 	 * 		  values of the value function is smaller than requiredPrecision for all the entries
 	 */
-	public ValueIteration(double[] states, double[] rewardsAtStates, int[] absorbingStatesIndices, double discountFactor, DoubleBinaryOperator runningRewardFunction, double requiredPrecision) {
+	public ValueIteration(double[] states, double[] rewardsAtStates, int[] absorbingStatesIndices, double discountFactor, double requiredPrecision) {
 		
 		this.states = states;
+		
 		this.rewardsAtStates = rewardsAtStates;
 		
 		this.discountFactor = discountFactor; 
 		
-        absorbingStatesIndicesAsList = Arrays.stream(absorbingStatesIndices).boxed().toList();;
-		
-		this.runningRewardFunction = runningRewardFunction;
-				
+        absorbingStatesIndicesAsList = Arrays.stream(absorbingStatesIndices).boxed().toList();
+						
 		this.requiredPrecision = requiredPrecision; 
 		
 		numberOfStates = states.length;
@@ -100,17 +102,16 @@ public abstract class ValueIteration {
 	private void generateValueFunctionsAndOptimalActions() {
 
 		//at the beginning, the value functions are just the rewards for every state. They will then get updated
-		valueFunctions = Arrays.copyOf(rewardsAtStates, numberOfStates);
-		oldValueFunctions = Arrays.copyOf(rewardsAtStates, numberOfStates);
+		valueFunctions = rewardsAtStates.clone();
+		oldValueFunctions = rewardsAtStates.clone();
 
 		//so we know it is bigger then requiredPrecision and the loop starts
 		double differenceBetweenPastAndOldValueFunctions = Double.MAX_VALUE;
-
 		
 		while (differenceBetweenPastAndOldValueFunctions >= requiredPrecision) {
 
 			//we update the value of the value function for every state which is not absorbing
-			for (int stateIndex = 0 ; stateIndex < numberOfStates; stateIndex ++) {
+			for (int stateIndex = 0; stateIndex < numberOfStates; stateIndex ++) {
 
 				if (!absorbingStatesIndicesAsList.contains(stateIndex)) {
 
@@ -121,10 +122,10 @@ public abstract class ValueIteration {
 					 * The returns for these actions, as the sum of running reward and (discounted) value function: they depend
 					 * on the specific problem as well
 					 */
-					double[] actionReturns =computeExpectedReturnsForStateAndActions(states[stateIndex],actions);
+					double[] actionReturns = computeExpectedReturnsForStateAndActions(states[stateIndex],actions);
 
 					//the new value function for the state is the maximum between the returns
-					double newValue = Arrays.stream(actionReturns).max().getAsDouble();
+					double newValue = UsefulMethodsForArrays.getMax(actionReturns);
 
 					//we update the value function for the given state
 					valueFunctions[stateIndex] = newValue;
@@ -141,7 +142,7 @@ public abstract class ValueIteration {
 			differenceBetweenPastAndOldValueFunctions = UsefulMethodsForArrays.getMaxDifference(valueFunctions, oldValueFunctions);
 
 			//update of the old value functions.
-			oldValueFunctions = Arrays.copyOf(valueFunctions, numberOfStates);
+			oldValueFunctions = valueFunctions.clone();
 		}
 		
 		//the loop is now terminated: we get the optimal actions
@@ -170,7 +171,7 @@ public abstract class ValueIteration {
         	double[] actionReturns = computeExpectedReturnsForStateAndActions(states[stateIndex], actions);
         	
         	//the index of the optimal action
-        	int indexOfOptimalAction = UsefulMethodsForArrays.getMaxIndex(Arrays.copyOfRange(actionReturns, 0, actionReturns.length));
+        	int indexOfOptimalAction = UsefulMethodsForArrays.getMaxIndex(actionReturns);
         	optimalActions[stateIndex] = actions[indexOfOptimalAction];
 			}
         }
@@ -190,14 +191,6 @@ public abstract class ValueIteration {
 	 */
 	public double getDiscountFactor() {
 		return discountFactor;
-	}
-	
-	/**
-	 * It returns the DoubleBinaryOperator representing the running reward function
-	 * @return the DoubleBinaryOperator representing the running reward function
-	 */
-	public DoubleBinaryOperator getRunningRewardFunction() {
-		return runningRewardFunction;
 	}
 	
 	/**
@@ -245,7 +238,7 @@ public abstract class ValueIteration {
 	protected abstract double[] computeActions(double state);
 	
 	/**
-	 * It computes and returns an array of doubles which represents the (expected) returns associated to every action for a givens tate
+	 * It computes and returns an array of doubles which represents the (expected) returns associated to every action for a given state
 	 * @returns an array of doubles which represents the actions that are allowed for the given state
 	 */
 	protected abstract double[] computeExpectedReturnsForStateAndActions(double state, double[] actions);

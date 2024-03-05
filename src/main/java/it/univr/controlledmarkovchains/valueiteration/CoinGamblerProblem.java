@@ -1,7 +1,6 @@
 package it.univr.controlledmarkovchains.valueiteration;
 
-import java.util.Arrays;
-import java.util.function.DoubleBinaryOperator;
+import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 
 /**
@@ -29,12 +28,11 @@ public class CoinGamblerProblem extends ValueIteration {
 	 * @param moneyToWin, the amount that the capital process must hit in order for the gambler to win the bet
 	 */
 	public CoinGamblerProblem(double discountFactor, double requiredPrecision, double headProbability, int moneyToWin) {
-		super( IntStream.range(0, moneyToWin+1).asDoubleStream().toArray(), //the vector (0,1,2,...,moneyToWin)
+		super(IntStream.range(0, moneyToWin+1).asDoubleStream().toArray(), //the vector (0,1,2,...,moneyToWin)
 				//the vector (0,0,0,...,0,1)
-				IntStream.concat(IntStream.generate(() -> 0).limit(moneyToWin), IntStream.of(1) ).asDoubleStream().toArray(), 
+				DoubleStream.concat(DoubleStream.generate(() -> 0).limit(moneyToWin), DoubleStream.of(1)).toArray(), 
 				new int[] {0, moneyToWin}, //the absorbing states
 				discountFactor, 
-				(x,y) -> 0, //the running reward: zero in our case
 				requiredPrecision);
 		this.headProbability = headProbability;
 		this.moneyToWin = moneyToWin;
@@ -48,24 +46,20 @@ public class CoinGamblerProblem extends ValueIteration {
 		 * needed to reach moneyToWin (it does not make sense to invest more). We write +1 because the second number in range
 		 * is exclusive
 		 */
-        int[] actions = IntStream.range(1, (int) (Math.min(state, moneyToWin - state) + 1)).toArray();
+        double[] actions = IntStream.range(1, (int) (Math.min(state, moneyToWin - state) + 1)).asDoubleStream().toArray();
         
-        //we have to convert them to double, as actions doubles for a general problem
-		return Arrays.stream(actions).mapToDouble(x -> (double) x).toArray();
+		return actions;
 	}
 
 	@Override
 	protected double[] computeExpectedReturnsForStateAndActions(double state, double[] actions) {
-		
-		DoubleBinaryOperator runningRewardFunction = getRunningRewardFunction();
-		
+				
 		double[] oldStateValues = getOldValuesFunctions();
 
 		double[] actionReturns = new double[actions.length];
         for (int actionIndex = 0; actionIndex < actions.length; actionIndex ++ ) {
-        	actionReturns[actionIndex]=runningRewardFunction.applyAsDouble(state, actions[actionIndex]) + //the running reward (deterministic)
-        			//the expected value at the next step given the chosen action and the current state
-        			headProbability * oldStateValues[(int) (state + actions[actionIndex])]
+        	//the expected value at the next step given the chosen action and the current state. There is no reward function
+        	actionReturns[actionIndex]= headProbability * oldStateValues[(int) (state + actions[actionIndex])]
         				 + (1 - headProbability) * oldStateValues[(int) (state - actions[actionIndex])];      	
         }
 		return actionReturns;
