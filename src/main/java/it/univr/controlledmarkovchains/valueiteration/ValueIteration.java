@@ -224,11 +224,12 @@ public abstract class ValueIteration {
 	 * 
 	 * @return the list of arrays of doubles recording all the updated value functions
 	 */
+	@SuppressWarnings("unchecked")
 	public ArrayList<double[]> getUpdatedOptimalValues() {
 		if (valueFunctions == null) {
 			generateValueFunctionsAndOptimalActions();
 		}
-		return updatedValueFunctions;
+		return (ArrayList<double[]>) updatedValueFunctions.clone();
 	}
 	
 	/**
