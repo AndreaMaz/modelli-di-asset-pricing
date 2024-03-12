@@ -99,7 +99,7 @@ public abstract class ValueIteration {
 	 * This is a private method which is used to compute the value functions for every state and then the
 	 * optimizing actions. It is the chore of the class.
 	 */
-	private void generateValueFunctionsAndOptimalActions() {
+	private void generateValueFunctionsAndOptimalActions() throws Exception {
 
 		//at the beginning, the value functions are just the rewards for every state. They will then get updated
 		valueFunctions = rewardsAtStates.clone();
@@ -197,8 +197,9 @@ public abstract class ValueIteration {
 	 * It returns a double array representing the value functions for every state
 	 * 
 	 * @return a double array representing the value functions for every state
+	 * @throws Exception 
 	 */
-	public double[] getValueFunctions() {
+	public double[] getValueFunctions() throws Exception {
 		if (valueFunctions == null) {
 			//it gets called only once!
 			generateValueFunctionsAndOptimalActions();
@@ -210,8 +211,9 @@ public abstract class ValueIteration {
 	 * It returns a double array representing the optimal actions providing the value functions for every state
 	 * 
 	 * @return a double array representing the value functions for every state
+	 * @throws Exception 
 	 */
-	public double[] getOptimalActions() {
+	public double[] getOptimalActions() throws Exception {
 		if (valueFunctions == null) {
 			//it gets called only once!
 			generateValueFunctionsAndOptimalActions();
@@ -223,9 +225,10 @@ public abstract class ValueIteration {
 	 * It returns the list of arrays of doubles recording all the updated value functions
 	 * 
 	 * @return the list of arrays of doubles recording all the updated value functions
+	 * @throws Exception 
 	 */
 	@SuppressWarnings("unchecked")
-	public ArrayList<double[]> getUpdatedOptimalValues() {
+	public ArrayList<double[]> getUpdatedOptimalValues() throws Exception {
 		if (valueFunctions == null) {
 			generateValueFunctionsAndOptimalActions();
 		}

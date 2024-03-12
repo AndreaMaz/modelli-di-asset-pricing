@@ -19,7 +19,7 @@ import net.finmath.plots.PlotableFunction2D;
  */
 public class CoinGamblerProblemTest {
 	
-	public static void main(String[] args) throws InterruptedException {
+	public static void main(String[] args) throws Exception {
 		
 		double requiredPrecision = 1e-4;
 

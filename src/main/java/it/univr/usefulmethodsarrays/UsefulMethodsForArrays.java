@@ -37,8 +37,14 @@ public class UsefulMethodsForArrays {
 	 * @param firstArray
 	 * @param secondArray
 	 * @return the maximum absolute difference between firstArray and secondArray
+	 * @throws Exception if the two arrays have different lengths 
 	 */
-	public static double getMaxDifference(double[] firstArray, double[] secondArray) {
+	public static double getMaxDifference(double[] firstArray, double[] secondArray) throws Exception {
+		
+		if (firstArray.length != secondArray.length) {
+			throw new Exception();
+		}
+		
 		return IntStream.range(0, firstArray.length)//the indices range from 0 to array.length-1
 				.mapToDouble(i -> Math.abs(firstArray[i] - secondArray[i]))
 				.max().getAsDouble();
