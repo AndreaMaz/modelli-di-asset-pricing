@@ -48,8 +48,8 @@ public class CoinGamblerProblemWithQLearning extends QLearning {
 	protected int[] computePossibleActionsIndices(int stateIndex) {
 		/*
 		 * Possible actions are (1,2,..,n) where n is the minimum between the capital (we cannot go negative) and the capital
-		 * needed to reach moneyToWin (it does not make sense to invest more). The index determines the column of the Q-value.
-		 * That's why we start from index 1.
+		 * needed to reach moneyToWin (it does not make sense to invest more). The index is the action minus 1: the index of action "1" is 0,
+		 * the index of action "2" is 1, and so on.
 		 */        
         return IntStream.range(0, Math.min(stateIndex, moneyToWin - stateIndex)).toArray();
 	}
@@ -57,7 +57,7 @@ public class CoinGamblerProblemWithQLearning extends QLearning {
 	@Override
 	protected int generateStateIndex(int oldStateIndex, int actionIndex) {
 		double randomResult = Random.nextDouble();
-		int action = actionIndex+1;
+		int action = actionIndex+1;//the action is the index plus 1!
 		if (randomResult < headProbability) {
 			return (oldStateIndex + action);
 		}

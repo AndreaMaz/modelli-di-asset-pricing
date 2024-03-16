@@ -22,13 +22,17 @@ public class CoinGamblerProblemWithQLearningTest {
 		int moneyToWin = 100;
 		double discountFactor = 1.0;//no discount
 
-		int numberOfEpisodes = 1000000;	
+		int numberOfEpisodes = 100000;	
 		double learningRate = 0.3;
 		double explorationProbability = 0.1;//usually, one needs to choose a small exploration probability
 
+		//TemporalDifferenceLearning problemSolver = new CoinGamblerProblemWithQLearningInheritance(headProbability, discountFactor, moneyToWin, numberOfEpisodes, learningRate, explorationProbability);
+		//TemporalDifferenceLearning problemSolver = new CoinGamblerProblemWithSarsaInheritance(headProbability, discountFactor, moneyToWin, numberOfEpisodes, learningRate, explorationProbability);
 		QLearning problemSolver = new CoinGamblerProblemWithQLearning(headProbability, discountFactor, moneyToWin, numberOfEpisodes, learningRate, explorationProbability);
 
+
 		double[] valueFunctions = problemSolver.getValueFunctions();
+		
 		
 		final Plot2D plotValueFunctions = new Plot2D(1, moneyToWin-1, moneyToWin-1, Arrays.asList(
 				new Named<DoubleUnaryOperator>("Value function", x -> valueFunctions[(int) x])));

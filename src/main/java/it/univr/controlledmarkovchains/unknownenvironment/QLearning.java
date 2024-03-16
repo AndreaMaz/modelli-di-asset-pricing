@@ -1,7 +1,6 @@
 package it.univr.controlledmarkovchains.unknownenvironment;
 
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -32,7 +31,7 @@ public abstract class QLearning {
 	//the discount factor gamma in the notes
 	private double discountFactor;
 	
-	//the running rewards, as a matrix: runningRewards[i][j] is the running rewards for the i-th state and for the j-th action
+	//the running rewards, as a matrix: runningRewards[i][j] is the running reward for the i-th state and for the j-th action
 	private double[][] runningRewards;
 	
 	//this array will contain the value function for every state, that is, the maximized values
@@ -41,8 +40,8 @@ public abstract class QLearning {
 	//the indices of the optimal actions for every state
 	private int[] optimalActionsIndices;
 
-	//the Q-values, as a matrix: qValue[i][j] is the Q-value for the i-th state and for the j-th action
-	private double[][] qValue;
+	//the Q-values, as a matrix: currentQValue[i][j] is the Q-value for the i-th state and for the j-th action
+	private double[][] currentQValue;
 
 	private int numberOfStates;
 
@@ -61,11 +60,8 @@ public abstract class QLearning {
 	 */
 	private double explorationProbability;
 
-	//used to generate the random numbers to determine exploration or exploitation
+	//used to generate the random numbers to determine exploration or exploitation and to choose the random action for exploration
 	private Random generator = new Random();
-
-	//a list of double arrays containing the value functions which are computed during the loop
-	private ArrayList<List<Double>> updatedOptimalValues = new ArrayList<List<Double>>();
 
 	
 	//it will be used to check if a state index corresponds to an absorbing state
@@ -78,7 +74,7 @@ public abstract class QLearning {
 	 * 
 	 * @param rewardsAtStates, the final rewards for every state. They must be zero for non absorbing states.
 	 * @param discountFactor, the discount factor gamma in the notes
-	 * @param runningRewards, the running rewards, as a matrix: runningRewards[i][j] is the running rewards for the i-th
+	 * @param runningRewards, the running rewards, as a matrix: runningRewards[i][j] is the running reward for the i-th
 	 * 		  state and for the j-th action
 	 * @param numberOfEpisodes, the number of loops from an initial state until an absorbing state 
 	 * @param learningRate, the learning rate lambda that enters in the update rule 
@@ -98,9 +94,9 @@ public abstract class QLearning {
 	}
 
 	/*
-	 * This is a private method which is used to fill the qValue matrix, which represents the Q-value for every state and action.
-	 * The value function and the index of the best action for the i-th state are then computed as max_{j}qValue[i,j] and
-	 * argmax_{j}qValue[i,j], respectively. This method is the chore of the class.
+	 * This is a private method which is used to fill the currentQValue matrix, which represents the Q-value for every state and action.
+	 * The value function and the index of the best action for the i-th state are then computed as max_{j}currentQValue[i,j] and
+	 * argmax_{j}currentQValue[i,j], respectively. This method is the chore of the class.
 	 */
 	private void generateOptimalValueAndPolicy() {
 
@@ -108,7 +104,7 @@ public abstract class QLearning {
 		optimalActionsIndices = new int[numberOfStates];
 
 		int numberOfActions = getNumberOfActions();
-		qValue = new double[numberOfStates][numberOfActions];
+		currentQValue = new double[numberOfStates][numberOfActions];
 
 		/*
 		 * We give the initial Q-values: for actions which are not permitted for a given state, we set the Q-value to minus Infinity.
@@ -121,9 +117,9 @@ public abstract class QLearning {
 			//we make it a list because then it's easier to check if it contains the given action indices
 			List<Integer> possibleActionsIndicesAsList = Arrays.stream(possibleActionsIndices).boxed().toList();
 			
-			//the column index is the action indes
+			//the column index is the action index
 			for (int columnIndex = 0; columnIndex < numberOfActions; columnIndex ++) {
-				qValue[rowIndex][columnIndex]=possibleActionsIndicesAsList.contains(columnIndex) ? rewardsAtStates[rowIndex] : Double.NEGATIVE_INFINITY;
+				currentQValue[rowIndex][columnIndex]=possibleActionsIndicesAsList.contains(columnIndex) ? rewardsAtStates[rowIndex] : Double.NEGATIVE_INFINITY;
 			}
 		}
 
@@ -147,13 +143,12 @@ public abstract class QLearning {
 			int chosenActionIndex;
 
 			while (true) {//it ends when we land in an absorbing state
-
-				int[] possibleActionsIndices = computePossibleActionsIndices(stateIndex);
 				
 				if (generator.nextDouble()< explorationProbability){//exploration: randomly chosen action
+					int[] possibleActionsIndices = computePossibleActionsIndices(stateIndex);
 					chosenActionIndex = possibleActionsIndices[generator.nextInt(possibleActionsIndices.length)];
 				} else {//exploitation: one maximizing action					
-					chosenActionIndex = UsefulMethodsForArrays.getRandomMaximizingIndex(qValue[stateIndex]);
+					chosenActionIndex = UsefulMethodsForArrays.getRandomMaximizingIndex(currentQValue[stateIndex]);
 				}
 
 				/*
@@ -164,28 +159,18 @@ public abstract class QLearning {
 				int newStateIndex = generateStateIndex(stateIndex, chosenActionIndex);
 
 				if (absorbingStatesIndicesAsList.contains(newStateIndex)) {
-					//if we land at an absorbing state, there is no possible action to be taken: the maximum is equal to the reward
-					qValue[stateIndex][chosenActionIndex] = qValue[stateIndex][chosenActionIndex] +
-							learningRate * (rewardsAtStates[newStateIndex]-qValue[stateIndex][chosenActionIndex]) ;
+					//if we land at an absorbing state, there is no possible action to be taken: the value is equal to the reward
+					currentQValue[stateIndex][chosenActionIndex] = currentQValue[stateIndex][chosenActionIndex] +
+							learningRate * (rewardsAtStates[newStateIndex]-currentQValue[stateIndex][chosenActionIndex]) ;
 					break; //we exit the while loop
 				}
 
 				//if we are not landed in an absorbing state, we now want to compute the maximum Q-value for the new state 
-
-				int[] possibleNewActionsIndices = computePossibleActionsIndices(newStateIndex);
-
-				//we fill this array and then take its maximum
-				double[]  valuesForPossibleActions = new double[possibleNewActionsIndices.length];
-
-				for (int indexForNewStates = 0; indexForNewStates< valuesForPossibleActions.length; indexForNewStates ++ ) {
-					valuesForPossibleActions[indexForNewStates] = qValue[newStateIndex][possibleNewActionsIndices[indexForNewStates]];
-				}
-
-				double maximumForGivenStateIndex = UsefulMethodsForArrays.getMax(valuesForPossibleActions);
+				double maximumForGivenStateIndex = UsefulMethodsForArrays.getMax(currentQValue[newStateIndex]);
 
 				//update
-				qValue[stateIndex][chosenActionIndex] = qValue[stateIndex][chosenActionIndex] +
-						learningRate * (runningRewards[stateIndex][chosenActionIndex] + discountFactor*maximumForGivenStateIndex-qValue[stateIndex][chosenActionIndex]) ;
+				currentQValue[stateIndex][chosenActionIndex] = currentQValue[stateIndex][chosenActionIndex] +
+						learningRate * (runningRewards[stateIndex][chosenActionIndex] + discountFactor*maximumForGivenStateIndex-currentQValue[stateIndex][chosenActionIndex]) ;
 
 
 				stateIndex = newStateIndex;
@@ -194,7 +179,7 @@ public abstract class QLearning {
 			}
 		}
 
-		//now we have run all the episodes, so we have our "final" qValue matrix. We then compute the value functions and the optimal actions
+		//now we have run all the episodes, so we have our "final" currentQValue matrix. We then compute the value functions and the optimal actions
 
 		for (int stateIndexAtTheEnd = 0; stateIndexAtTheEnd < numberOfStates; stateIndexAtTheEnd ++) {
 			if (absorbingStatesIndicesAsList.contains(stateIndexAtTheEnd)) { 
@@ -202,10 +187,15 @@ public abstract class QLearning {
 				valueFunctions[stateIndexAtTheEnd] = rewardsAtStates[stateIndexAtTheEnd];
 				optimalActionsIndices[stateIndexAtTheEnd] = (int) Double.NaN;
 			} else {
-				valueFunctions[stateIndexAtTheEnd] = UsefulMethodsForArrays.getMax(qValue[stateIndexAtTheEnd]);
-				optimalActionsIndices[stateIndexAtTheEnd] = UsefulMethodsForArrays.getMaxIndex(qValue[stateIndexAtTheEnd]);
+				valueFunctions[stateIndexAtTheEnd] = UsefulMethodsForArrays.getMax(currentQValue[stateIndexAtTheEnd]);
+				optimalActionsIndices[stateIndexAtTheEnd] = UsefulMethodsForArrays.getMaxIndex(currentQValue[stateIndexAtTheEnd]);
 			}
 		}
+	}
+	
+	
+	protected double[][] getCurrentQValue() {
+		return currentQValue.clone();
 	}
 	
 	/**
@@ -214,7 +204,7 @@ public abstract class QLearning {
 	 * @return a double array representing the value functions for every state
 	 */
 	public double[] getValueFunctions() {
-		if (qValue == null) {
+		if (currentQValue == null) {
 			generateOptimalValueAndPolicy();
 		}
 		return valueFunctions.clone();
@@ -230,18 +220,6 @@ public abstract class QLearning {
 			generateOptimalValueAndPolicy();
 		}
 		return optimalActionsIndices.clone();
-	}
-
-	/**
-	 * It returns the list of arrays of doubles recording all the updated value functions
-	 * 
-	 * @return the list of arrays of doubles recording all the updated value functions
-	 */
-	public ArrayList<List<Double>> getUpdatedValueFunctions() {
-		if (valueFunctions == null) {
-			generateOptimalValueAndPolicy();
-		}
-		return updatedOptimalValues;
 	}
 
 	
