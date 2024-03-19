@@ -7,7 +7,7 @@ import java.util.function.DoubleUnaryOperator;
 import net.finmath.plots.Named;
 import net.finmath.plots.Plot2D;
 
-public class CoinGamblerProblemWithQLearningTest {
+public class CoinGamblerProblemWithTemporalDifferenceLearningTest {
 
 	/**
 	 * This class tests the implementation of QLearning and its derived class CoinGamblerProblemWithQLearning
@@ -22,7 +22,7 @@ public class CoinGamblerProblemWithQLearningTest {
 		int moneyToWin = 100;
 		double discountFactor = 1.0;//no discount
 
-		int numberOfEpisodes = 100000;	
+		int numberOfEpisodes = 1000000;	
 		double learningRate = 0.3;
 		double explorationProbability = 0.1;//usually, one needs to choose a small exploration probability
 
