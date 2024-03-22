@@ -30,13 +30,13 @@ public abstract class QLearning {
 
 	//the discount factor gamma in the notes
 	private double discountFactor;
-	
+
 	//the running rewards, as a matrix: runningRewards[i][j] is the running reward for the i-th state and for the j-th action
 	private double[][] runningRewards;
-	
+
 	//this array will contain the value function for every state, that is, the maximized values
 	private double[] valueFunctions;
-	
+
 	//the indices of the optimal actions for every state
 	private int[] optimalActionsIndices;
 
@@ -45,14 +45,14 @@ public abstract class QLearning {
 
 	private int numberOfStates;
 
-	private int numberOfEpisodes;	
+	private int numberOfEpisodes;
 
 	/*
 	 * The learning rate lambda that enters in the update rule 
 	 * Q(x,a) <- Q(x,a) + lambda * (f^a(x)+gamma*max_{b in A(y)} Q(y,b)-Q(x,a))
 	 */
 	private double learningRate;
-	
+
 	/*
 	 * A parameter in [0,1] that characterizes the exploration probability: an action a at a given state x is
 	 * randomly chosen in the set of possible actions for x with probability equal to explorationProbability, and is instead
@@ -63,10 +63,10 @@ public abstract class QLearning {
 	//used to generate the random numbers to determine exploration or exploitation and to choose the random action for exploration
 	private Random generator = new Random();
 
-	
+
 	//it will be used to check if a state index corresponds to an absorbing state
-	List<Integer> absorbingStatesIndicesAsList;
-		
+	private List<Integer> absorbingStatesIndicesAsList;
+
 	/**
 	 * It constructs an object to solve a stochastic control problem in the setting of controlled Markov chains
 	 * for discrete time and discrete space, under the hypothesis that the transition probabilities from one state
@@ -75,17 +75,17 @@ public abstract class QLearning {
 	 * @param rewardsAtStates, the final rewards for every state. They must be zero for non absorbing states.
 	 * @param discountFactor, the discount factor gamma in the notes
 	 * @param runningRewards, the running rewards, as a matrix: runningRewards[i][j] is the running reward for the i-th
-	 * 		  state and for the j-th action
+	 *            state and for the j-th action
 	 * @param numberOfEpisodes, the number of loops from an initial state until an absorbing state 
 	 * @param learningRate, the learning rate lambda that enters in the update rule 
-	 * 		  Q(x,a) <- Q(x,a) + lambda * (f^a(x)+gamma*max_{b in A(y)} Q(y,b)-Q(x,a))
+	 *            Q(x,a) <- Q(x,a) + lambda * (f^a(x)+gamma*max_{b in A(y)} Q(y,b)-Q(x,a))
 	 * @param explorationProbability, the probability that an action for a given state is randomly chosen
 	 */
 	public QLearning(double[] rewardsAtStates, int[] absorbingStatesIndices, double discountFactor, double[][] runningRewards, int numberOfEpisodes,
 			double learningRate, double explorationProbability) {
 		this.rewardsAtStates = rewardsAtStates;
 		numberOfStates = rewardsAtStates.length;
-        absorbingStatesIndicesAsList = Arrays.stream(absorbingStatesIndices).boxed().toList();
+		absorbingStatesIndicesAsList = Arrays.stream(absorbingStatesIndices).boxed().toList();
 		this.discountFactor = discountFactor;
 		this.runningRewards = runningRewards;
 		this.numberOfEpisodes = numberOfEpisodes; 
@@ -113,10 +113,10 @@ public abstract class QLearning {
 		for (int rowIndex = 0; rowIndex < numberOfStates; rowIndex ++) {
 			//the index of the actions which are allowed for that state
 			int[] possibleActionsIndices = computePossibleActionsIndices(rowIndex);
-			
+
 			//we make it a list because then it's easier to check if it contains the given action indices
 			List<Integer> possibleActionsIndicesAsList = Arrays.stream(possibleActionsIndices).boxed().toList();
-			
+
 			//the column index is the action index
 			for (int columnIndex = 0; columnIndex < numberOfActions; columnIndex ++) {
 				currentQValue[rowIndex][columnIndex]=possibleActionsIndicesAsList.contains(columnIndex) ? rewardsAtStates[rowIndex] : Double.NEGATIVE_INFINITY;
@@ -124,7 +124,7 @@ public abstract class QLearning {
 		}
 
 		//now we go through the episodes
-		
+
 		//any episode starts from a randomly chosen state and terminates when hitting an absorbing state
 		for (int episodeIndex = 0; episodeIndex < numberOfEpisodes; episodeIndex ++) {
 
@@ -135,7 +135,7 @@ public abstract class QLearning {
 			while (absorbingStatesIndicesAsList.contains(temptativeStateIndex)) {
 				temptativeStateIndex = generator.nextInt(numberOfStates);
 			}
-			
+
 			//finally, we get the state which is not absorbing
 			int stateIndex = temptativeStateIndex;
 
@@ -143,11 +143,11 @@ public abstract class QLearning {
 			int chosenActionIndex;
 
 			while (true) {//it ends when we land in an absorbing state
-				
+
 				if (generator.nextDouble()< explorationProbability){//exploration: randomly chosen action
 					int[] possibleActionsIndices = computePossibleActionsIndices(stateIndex);
 					chosenActionIndex = possibleActionsIndices[generator.nextInt(possibleActionsIndices.length)];
-				} else {//exploitation: one maximizing action					
+				} else {//exploitation: one maximizing action                           
 					chosenActionIndex = UsefulMethodsForArrays.getRandomMaximizingIndex(currentQValue[stateIndex]);
 				}
 
@@ -161,7 +161,7 @@ public abstract class QLearning {
 				if (absorbingStatesIndicesAsList.contains(newStateIndex)) {
 					//if we land at an absorbing state, there is no possible action to be taken: the value is equal to the reward
 					currentQValue[stateIndex][chosenActionIndex] = currentQValue[stateIndex][chosenActionIndex] +
-							learningRate * (rewardsAtStates[newStateIndex]-currentQValue[stateIndex][chosenActionIndex]) ;
+							learningRate * (discountFactor*rewardsAtStates[newStateIndex]-currentQValue[stateIndex][chosenActionIndex]) ;
 					break; //we exit the while loop
 				}
 
@@ -174,8 +174,6 @@ public abstract class QLearning {
 
 
 				stateIndex = newStateIndex;
-				
-				
 			}
 		}
 
@@ -192,12 +190,12 @@ public abstract class QLearning {
 			}
 		}
 	}
-	
-	
+
+
 	protected double[][] getCurrentQValue() {
 		return currentQValue.clone();
 	}
-	
+
 	/**
 	 * It returns a double array representing the value functions for every state
 	 * 
@@ -222,7 +220,7 @@ public abstract class QLearning {
 		return optimalActionsIndices.clone();
 	}
 
-	
+
 	/**
 	 * It returns the discount factor 
 	 * 
@@ -231,7 +229,7 @@ public abstract class QLearning {
 	public double getDiscountFactor() {
 		return discountFactor;
 	}
-	
+
 	/**
 	 * It returns the total number of possible actions (indipendent from the state)
 	 * @return the total number of possible actions (indipendent from the state)

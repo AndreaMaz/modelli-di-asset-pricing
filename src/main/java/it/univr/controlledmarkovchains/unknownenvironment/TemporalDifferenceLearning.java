@@ -38,7 +38,7 @@ public abstract class TemporalDifferenceLearning {
 
 	private int numberOfStates;
 
-	private int numberOfEpisodes;	
+	private int numberOfEpisodes;
 
 
 	// The learning rate lambda that enters in the update rule of the Q-values
@@ -58,7 +58,7 @@ public abstract class TemporalDifferenceLearning {
 	 * @param rewardsAtStates, the final rewards for every state. They must be zero for non absorbing states.
 	 * @param discountFactor, the discount factor gamma in the notes
 	 * @param runningRewards, the running rewards, as a matrix: runningRewards[i][j] is the running rewards for the i-th
-	 * 		  state and for the j-th action
+	 *            state and for the j-th action
 	 * @param numberOfEpisodes, the number of loops from an initial state until an absorbing state 
 	 * @param learningRate, the learning rate lambda that enters in the update of the Q-values
 	 */
@@ -155,17 +155,15 @@ public abstract class TemporalDifferenceLearning {
 				double[] newCandidateActionIndexAndValue = getCandidateActionIndexAndValue(newStateIndex);
 
 				//it does not actually matter for off-policy methods. For on-policy methods it determines chosenActionIndex at the next step
-				candidateActionIndex = (int) newCandidateActionIndexAndValue[0];
-				
-				double newValue = newCandidateActionIndexAndValue[1];
+				candidateActionIndex = (int) newCandidateActionIndexAndValue[0];//a'
+
+				double newValue = newCandidateActionIndexAndValue[1];//enters in the update formula
 
 				//update
 				currentQValue[stateIndex][chosenActionIndex] = currentQValue[stateIndex][chosenActionIndex] +
 						learningRate * (runningRewards[stateIndex][chosenActionIndex] + discountFactor*newValue-currentQValue[stateIndex][chosenActionIndex]);
 
-
 				stateIndex = newStateIndex;
-
 
 			}
 		}
@@ -226,7 +224,7 @@ public abstract class TemporalDifferenceLearning {
 		return discountFactor;
 	}
 
-	
+
 	/**
 	 * It computes and returns the index of the chosen action at the beginning of an episode
 	 * 
@@ -245,7 +243,7 @@ public abstract class TemporalDifferenceLearning {
 	 */
 	protected abstract int chooseActionIndex(int stateIndex, int candidateActionIndex);
 
-	
+
 	/**
 	 * It returns the value u_p(x',a') that must be put in the update formula
 	 * Q(x,a) <- Q(x,a) + lambda * (f^a(x)+gamma*u_p(x',a')-Q(x,a)),
