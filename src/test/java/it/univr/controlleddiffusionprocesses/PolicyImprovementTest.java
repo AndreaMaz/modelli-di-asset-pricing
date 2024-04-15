@@ -17,6 +17,7 @@ public class PolicyImprovementTest {
 	
 	public static void main(String[] args) throws Exception {
 		
+		DecimalFormat formatterForControl = new DecimalFormat("0.00");
 		DecimalFormat formatterForValue = new DecimalFormat("0.000");
 		
 		/*
@@ -31,7 +32,7 @@ public class PolicyImprovementTest {
 		
 		double optimalControl = (constantDrift - interestRate)/(constantSigma*constantSigma*(1-exponentForFinalRewardFunction));
 
-		System.out.println("Analytic optimal control " +  optimalControl);
+		System.out.println("Analytic optimal control " +  formatterForControl.format(optimalControl));
 		System.out.println();
 		
 		//functions for the SDE
@@ -88,7 +89,7 @@ public class PolicyImprovementTest {
 				
 				double control = optimizer.getOptimalControlAtTimeAndSpace(time, space);
 				
-				System.out.println("Approximated control " + formatterForValue.format(control));
+				System.out.println("Approximated control " + formatterForControl.format(control));
 				
 				System.out.println();
 			}
