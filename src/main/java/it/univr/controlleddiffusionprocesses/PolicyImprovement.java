@@ -226,11 +226,6 @@ public class PolicyImprovement {
 				//..and take the control that maximizes them
 				maximizingControls[timeIndex - 1][spaceIndex]=controls[UsefulMethodsForArrays.getRandomMaximizingIndex(valuesForControls)];
 				
-				//if (spaceIndex == 15 & timeIndex == 10) {
-				//	System.out.println("max control " + controls[UsefulMethodsForArrays.getRandomMaximizingIndex(valuesForControls)]);
-				//	System.out.println("value function " + updatedValueFunction[timeIndex][spaceIndex]);					
-				//}
-				
 				space += spaceStep;
 			}
 			
