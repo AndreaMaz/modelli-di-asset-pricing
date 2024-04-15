@@ -99,8 +99,8 @@ public class UsefulMethodsForArrays {
 	public static int getRandomMaximizingIndex(double[] array) {
 		double maximum = getMax(array);
 
-		int[] maximizingIndices = IntStream.range(0, array.length).filter(i -> array[i] == maximum).toArray();
-		return maximizingIndices[Random.nextInt(maximizingIndices.length)];
+		int[] maximizingIndices = IntStream.range(0, array.length).filter(i -> Precision.round(array[i],4) == Precision.round(maximum,4)).toArray();
+		return maximizingIndices[0];
 
 	}	
 

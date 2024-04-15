@@ -186,15 +186,15 @@ public class PolicyImprovement {
 		double[] controls = IntStream.range(0, numberOfControls + 1).mapToDouble(i -> leftEndControlInterval + i * controlStep).toArray();
 		double time = timeStep;
 		
-		for (int timeIndex = 0; timeIndex < numberOfTimeSteps; timeIndex ++) {
+		for (int timeIndex = 1; timeIndex <= numberOfTimeSteps; timeIndex ++) {
 			/*
-			 * Nornall, we take finite differences. However, this is not possible for x[0]. This is why we distinguish this case
+			 * Normally, we take finite differences. However, this is not possible for x[0]. This is why we distinguish this case
 			 */
 			double space = leftEndSpaceInterval;
-			double firstSpaceDerivative = (updatedValueFunction[timeIndex + 1][1]-updatedValueFunction[timeIndex + 1][0])/spaceStep;
+			double firstSpaceDerivative = (updatedValueFunction[timeIndex][1]-updatedValueFunction[timeIndex][0])/spaceStep;
 			
 			//the second derivative is approximated as the (also approximated) one at x[1]
-			double secondSpaceDerivative = (updatedValueFunction[timeIndex + 1][2]-updatedValueFunction[timeIndex + 1][1]+updatedValueFunction[timeIndex + 1][0])/(spaceStep*spaceStep);
+			double secondSpaceDerivative = (updatedValueFunction[timeIndex][2]-updatedValueFunction[timeIndex][1]+updatedValueFunction[timeIndex][0])/(spaceStep*spaceStep);
 			double[] valuesForControls = new double[numberOfControls];
 			
 			//we compute the values of all the controls..
@@ -205,14 +205,14 @@ public class PolicyImprovement {
 						+ runningRewardFunction.apply(time, space, controls[controlIndex]);
 			}
 			//..and take the control that maximizes them
-			maximizingControls[timeIndex][0]=controls[UsefulMethodsForArrays.getRandomMaximizingIndex(valuesForControls)];
+			maximizingControls[timeIndex - 1][0]=controls[UsefulMethodsForArrays.getRandomMaximizingIndex(valuesForControls)];
 			
 			//we repeat the same for the other space indices
 			for (int spaceIndex = 1; spaceIndex < numberOfSpaceSteps; spaceIndex ++) {
 				//central differences
-				firstSpaceDerivative = (updatedValueFunction[timeIndex + 1][spaceIndex + 1]-updatedValueFunction[timeIndex + 1][spaceIndex - 1])/(2*spaceStep);
-				secondSpaceDerivative = (updatedValueFunction[timeIndex + 1][spaceIndex + 1]-2*updatedValueFunction[timeIndex + 1][spaceIndex]
-						+updatedValueFunction[timeIndex + 1][spaceIndex - 1])/(spaceStep*spaceStep);
+				firstSpaceDerivative = (updatedValueFunction[timeIndex][spaceIndex + 1]-updatedValueFunction[timeIndex ][spaceIndex - 1])/(2*spaceStep);
+				secondSpaceDerivative = (updatedValueFunction[timeIndex][spaceIndex + 1]-2*updatedValueFunction[timeIndex][spaceIndex]
+						+updatedValueFunction[timeIndex][spaceIndex - 1])/(spaceStep*spaceStep);
 				valuesForControls = new double[numberOfControls];
 				
 				//we compute the values of all the controls..
@@ -224,16 +224,22 @@ public class PolicyImprovement {
 				}
 				
 				//..and take the control that maximizes them
-				maximizingControls[timeIndex][spaceIndex]=controls[UsefulMethodsForArrays.getRandomMaximizingIndex(valuesForControls)];
+				maximizingControls[timeIndex - 1][spaceIndex]=controls[UsefulMethodsForArrays.getRandomMaximizingIndex(valuesForControls)];
+				
+				//if (spaceIndex == 15 & timeIndex == 10) {
+				//	System.out.println("max control " + controls[UsefulMethodsForArrays.getRandomMaximizingIndex(valuesForControls)]);
+				//	System.out.println("value function " + updatedValueFunction[timeIndex][spaceIndex]);					
+				//}
+				
 				space += spaceStep;
 			}
 			
 			//now we consider the final space value, that is, x[numberOfSpaceSteps+1]
-			firstSpaceDerivative = (updatedValueFunction[timeIndex + 1][numberOfSpaceSteps]-updatedValueFunction[timeIndex + 1][numberOfSpaceSteps - 1])/spaceStep;
+			firstSpaceDerivative = (updatedValueFunction[timeIndex][numberOfSpaceSteps]-updatedValueFunction[timeIndex][numberOfSpaceSteps - 1])/spaceStep;
 			
 			//the second derivative is approximated as the (also approximated) one at x[numberOfSpaceSteps]
-			secondSpaceDerivative = (updatedValueFunction[timeIndex + 1][numberOfSpaceSteps]-2*updatedValueFunction[timeIndex + 1][numberOfSpaceSteps - 1]
-					+updatedValueFunction[timeIndex + 1][numberOfSpaceSteps - 2])/(spaceStep*spaceStep);
+			secondSpaceDerivative = (updatedValueFunction[timeIndex][numberOfSpaceSteps]-2*updatedValueFunction[timeIndex][numberOfSpaceSteps - 1]
+					+updatedValueFunction[timeIndex][numberOfSpaceSteps - 2])/(spaceStep*spaceStep);
 
 			valuesForControls = new double[numberOfControls];
 			
@@ -246,7 +252,7 @@ public class PolicyImprovement {
 			}
 
 			//..and take the control that maximizes them
-			maximizingControls[timeIndex][numberOfSpaceSteps]=controls[UsefulMethodsForArrays.getRandomMaximizingIndex(valuesForControls)];
+			maximizingControls[timeIndex - 1][numberOfSpaceSteps]=controls[UsefulMethodsForArrays.getRandomMaximizingIndex(valuesForControls)];
 			
 			time += timeStep;
 		}
@@ -312,7 +318,7 @@ public class PolicyImprovement {
 		if (updatedValueFunction == null) {
 			computeSolutionAndOptimalControl();
 		}
-		return updatedOptimalControl[timeIndex];
+		return updatedOptimalControl[timeIndex - 1];
 	}
 
 	/**
@@ -350,6 +356,6 @@ public class PolicyImprovement {
 		if (updatedValueFunction == null) {
 			computeSolutionAndOptimalControl();
 		}
-		return updatedOptimalControl[timeIndex][spaceIndex];
+		return updatedOptimalControl[timeIndex - 1][spaceIndex];
 	}
 }
