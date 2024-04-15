@@ -5,6 +5,14 @@ import java.util.stream.IntStream;
 
 import org.apache.commons.numbers.core.Precision;
 import org.jblas.util.Random;
+import org.apache.commons.math3.linear.ArrayRealVector;
+import org.apache.commons.math3.linear.DecompositionSolver;
+import org.apache.commons.math3.linear.LUDecomposition;
+import org.apache.commons.math3.linear.MatrixUtils;
+import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.linear.RealVector;
+
+
 
 public class UsefulMethodsForArrays {
 
@@ -31,7 +39,26 @@ public class UsefulMethodsForArrays {
 		double minimum = Arrays.stream(array).min().getAsDouble();
 		return minimum;
 	}
-	
+
+	/**
+	 * It computes and returns the maximum sum of the elements of the rows of the matrix which is the difference between
+	 * the two matrices given in input, divided by the number of columns of the matrices.
+	 * @param firstMatrix
+	 * @param secondMatrix
+	 * @return the maximum sum of the elements of the rows of the matrix which is the difference between
+	 * 			the two matrices given in input, divided by the number of columns of the matrices
+	 */
+	public static double getNormDifference(double[][] firstMatrix, double[][] secondMatrix) throws Exception {
+
+		RealMatrix newFirstMatrix = MatrixUtils.createRealMatrix(firstMatrix);
+		RealMatrix newSecondMatrix = MatrixUtils.createRealMatrix(secondMatrix);
+
+		int numberOfColumns = newFirstMatrix.getColumnDimension();
+
+		return newFirstMatrix.subtract(newSecondMatrix).getNorm()/numberOfColumns;
+	}
+
+
 	/**
 	 * It computes and returns the maximum absolute difference between two arrays
 	 * @param firstArray
@@ -40,11 +67,11 @@ public class UsefulMethodsForArrays {
 	 * @throws Exception if the two arrays have different lengths 
 	 */
 	public static double getMaxDifference(double[] firstArray, double[] secondArray) throws Exception {
-		
+
 		if (firstArray.length != secondArray.length) {
 			throw new Exception();
 		}
-		
+
 		return IntStream.range(0, firstArray.length)//the indices range from 0 to array.length-1
 				.mapToDouble(i -> Math.abs(firstArray[i] - secondArray[i]))
 				.max().getAsDouble();
@@ -61,8 +88,8 @@ public class UsefulMethodsForArrays {
 				.reduce((i, j) -> Precision.round(array[i],4) >= Precision.round(array[j],4) ? i : j)
 				.getAsInt();
 	}
-	
-	
+
+
 	/**
 	 * It returns the index which maximizes the value of an array. In case of more elements
 	 * of the array achieving the maximum, index is chosen randomly
@@ -72,8 +99,25 @@ public class UsefulMethodsForArrays {
 	public static int getRandomMaximizingIndex(double[] array) {
 		double maximum = getMax(array);
 
-        int[] maximizingIndices = IntStream.range(0, array.length).filter(i -> array[i] == maximum).toArray();
-        return maximizingIndices[Random.nextInt(maximizingIndices.length)];
-        
+		int[] maximizingIndices = IntStream.range(0, array.length).filter(i -> array[i] == maximum).toArray();
+		return maximizingIndices[Random.nextInt(maximizingIndices.length)];
+
 	}	
+
+	/**
+	 * It solves the linear system Ax=b
+	 * @param matrix, A
+	 * @param knownVector, b
+	 * @return the solution x
+	 */
+	public static double[] solveLinearSystem(double[][] matrix, double[] knownVector) {
+
+		//we use here the implementation of org.apache.commons.math3.linear
+		RealMatrix newMatrix = MatrixUtils.createRealMatrix(matrix);
+		DecompositionSolver solver = new LUDecomposition(newMatrix).getSolver();
+		RealVector constants = new ArrayRealVector(knownVector, false);
+		RealVector solution = solver.solve(constants);
+		return solution.toArray();
+	}
+
 }
