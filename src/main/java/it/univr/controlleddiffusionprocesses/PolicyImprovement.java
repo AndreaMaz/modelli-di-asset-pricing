@@ -187,9 +187,8 @@ public class PolicyImprovement {
 		double time = timeStep;
 		
 		for (int timeIndex = 1; timeIndex <= numberOfTimeSteps; timeIndex ++) {
-			/*
-			 * Normally, we take finite differences. However, this is not possible for x[0]. This is why we distinguish this case
-			 */
+			
+			// Normally, we take central differences. However, this is not possible for x[0]. This is why we distinguish this case
 			double space = leftEndSpaceInterval;
 			double firstSpaceDerivative = (updatedValueFunction[timeIndex][1]-updatedValueFunction[timeIndex][0])/spaceStep;
 			
@@ -327,7 +326,7 @@ public class PolicyImprovement {
 	public double getValueFunctionAtTimeAndSpace(double time, double space) throws Exception {
 
 		int timeIndex = (int) Math.round(time / timeStep);
-		int spaceIndex = (int) Math.round((space - leftEndControlInterval) / spaceStep);
+		int spaceIndex = (int) Math.round((space - leftEndSpaceInterval) / spaceStep);
 		
 		if (updatedValueFunction == null) {
 			computeSolutionAndOptimalControl();
@@ -346,7 +345,7 @@ public class PolicyImprovement {
 	public double getOptimalControlAtTimeAndSpace(double time, double space) throws Exception {
 
 		int timeIndex = (int) Math.round(time / timeStep);
-		int spaceIndex = (int) Math.round((space - leftEndControlInterval) / spaceStep);
+		int spaceIndex = (int) Math.round((space - leftEndSpaceInterval) / spaceStep);
 
 		if (updatedValueFunction == null) {
 			computeSolutionAndOptimalControl();
