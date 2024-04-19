@@ -13,7 +13,7 @@ import net.finmath.util.TriFunction;
  * Main goal of this class is to provide an approximated solution to the class of optimal stochastic
  * control problems studied in Section 4 of the notes, for space dimension equal to one.
  * We do that via the Policy Improvement Algorithm, see Section 4.7.
- * We use a PDE solver to numericall approximate the solution of the PDEs for given controls. In particular,
+ * We use a PDE solver to numerically approximate the solution of the PDEs for given controls. In particular,
  * we use the class CrankNicholsonPDESolver.
  * 
  * @author Andrea Mazzon
@@ -26,7 +26,7 @@ public class PolicyImprovement {
 	private TriFunction<Double, Double, Double, Double> diffusionFunctionWithControl;
 	private TriFunction<Double, Double, Double, Double> runningRewardFunction;
 
-	//this is only function of space
+	//this is function of space only
 	private DoubleUnaryOperator finalRewardFunction;
 
 	//it will be given to the PDE solver
@@ -117,7 +117,7 @@ public class PolicyImprovement {
 
 
 	/*
-	 * This is the chore of the class: here we apply indeed the Policy Improvement Algorithm by starting from a given matrix of controls which will be
+	 * This is the core of the class: here we apply indeed the Policy Improvement Algorithm by starting from a given matrix of controls which will be
 	 * iteratively updated based on the solution of the PDE for the past optimal controls. 
 	 */
 	private void computeSolutionAndOptimalControl() throws Exception {
@@ -128,10 +128,9 @@ public class PolicyImprovement {
 		for (int rowIndex = 0; rowIndex < numberOfTimeSteps; rowIndex ++) {
 			//these values are the middle point of the control interval
 			Arrays.fill(updatedOptimalControl[rowIndex], (rightEndControlInterval-leftEndControlInterval)/2);
-
 		}
 		
-		//we construct the object to solve the first PDE, for teh first control
+		//we construct the object to solve the first PDE, for the first control
 		CrankNicholsonPDESolver solver = new CrankNicholsonPDESolver(spaceStep,  timeStep,  leftEndSpaceInterval,  rightEndSpaceInterval,  finalTime,
 				driftFunctionWithControl, diffusionFunctionWithControl, runningRewardFunction, finalRewardFunction, conditionAtLeftBoundary, 
 				updatedOptimalControl);
@@ -165,14 +164,12 @@ public class PolicyImprovement {
 			//the norm of a matrix is here computed as the maximum sum of the elements of its rows divided by the number of columns
 			differenceNorm = UsefulMethodsForArrays.getNormDifference(updatedValueFunction, oldSolution);
 			iterationCounter ++;
-
 		}
-
 	}
 
 	/*
 	 * At the k-th iteration of the Policy Improvement Algorithm we implement, this method returns a matrix whose element of row i and column
-	 * is the control a(t[i],x[j]) that maximizes 1/2(sigma(t[i],x[j],a))^2 * \partial_xx v^k + (b(t[i],x[j],a)) * \partial_x v^k + f()t[i],x[j],a),
+	 * is the control a^k(t[i],x[j]) that maximizes 1/2(sigma(t[i],x[j],a))^2 * \partial_xx v^k + (b(t[i],x[j],a)) * \partial_x v^k + f()t[i],x[j],a),
 	 * where v^k is the value function computed at the k-th iteration. The derivatives are approximated via final differences. 
 	 */
 	private double[][] getMaximizingControl(double[][] currentValueFunction){
@@ -183,7 +180,7 @@ public class PolicyImprovement {
 		int numberOfControls = (int) ((rightEndControlInterval - leftEndControlInterval)/controlStep) + 1;
 
 		//all the possible controls. For every time and space, we choose the maximizing one.
-		double[] controls = IntStream.range(0, numberOfControls + 1).mapToDouble(i -> leftEndControlInterval + i * controlStep).toArray();
+		double[] controls = IntStream.range(0, numberOfControls).mapToDouble(i -> leftEndControlInterval + i * controlStep).toArray();
 		double time = timeStep;
 		
 		for (int timeIndex = 1; timeIndex <= numberOfTimeSteps; timeIndex ++) {
@@ -193,7 +190,7 @@ public class PolicyImprovement {
 			double firstSpaceDerivative = (updatedValueFunction[timeIndex][1]-updatedValueFunction[timeIndex][0])/spaceStep;
 			
 			//the second derivative is approximated as the (also approximated) one at x[1]
-			double secondSpaceDerivative = (updatedValueFunction[timeIndex][2]-updatedValueFunction[timeIndex][1]+updatedValueFunction[timeIndex][0])/(spaceStep*spaceStep);
+			double secondSpaceDerivative = (updatedValueFunction[timeIndex][2]-2*updatedValueFunction[timeIndex][1]+updatedValueFunction[timeIndex][0])/(spaceStep*spaceStep);
 			double[] valuesForControls = new double[numberOfControls];
 			
 			//we compute the values of all the controls..
@@ -208,6 +205,7 @@ public class PolicyImprovement {
 			
 			//we repeat the same for the other space indices
 			for (int spaceIndex = 1; spaceIndex < numberOfSpaceSteps; spaceIndex ++) {
+				space += spaceStep;
 				//central differences
 				firstSpaceDerivative = (updatedValueFunction[timeIndex][spaceIndex + 1]-updatedValueFunction[timeIndex ][spaceIndex - 1])/(2*spaceStep);
 				secondSpaceDerivative = (updatedValueFunction[timeIndex][spaceIndex + 1]-2*updatedValueFunction[timeIndex][spaceIndex]
@@ -224,8 +222,6 @@ public class PolicyImprovement {
 				
 				//..and take the control that maximizes them
 				maximizingControls[timeIndex - 1][spaceIndex]=controls[UsefulMethodsForArrays.getRandomMaximizingIndex(valuesForControls)];
-				
-				space += spaceStep;
 			}
 			
 			//now we consider the final space value, that is, x[numberOfSpaceSteps+1]
