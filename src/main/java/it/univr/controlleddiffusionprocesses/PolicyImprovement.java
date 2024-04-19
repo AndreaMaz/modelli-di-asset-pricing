@@ -185,32 +185,13 @@ public class PolicyImprovement {
 		
 		for (int timeIndex = 1; timeIndex <= numberOfTimeSteps; timeIndex ++) {
 			
-			// Normally, we take central differences. However, this is not possible for x[0]. This is why we distinguish this case
 			double space = leftEndSpaceInterval;
-			double firstSpaceDerivative = (updatedValueFunction[timeIndex][1]-updatedValueFunction[timeIndex][0])/spaceStep;
 			
-			//the second derivative is approximated as the (also approximated) one at x[1]
-			double secondSpaceDerivative = (updatedValueFunction[timeIndex][2]-2*updatedValueFunction[timeIndex][1]+updatedValueFunction[timeIndex][0])/(spaceStep*spaceStep);
-			double[] valuesForControls = new double[numberOfControls];
-			
-			//we compute the values of all the controls..
-			for (int controlIndex = 0; controlIndex < numberOfControls; controlIndex ++) {
-				double drift = driftFunctionWithControl.apply(time, space, controls[controlIndex]);
-				double volatility = diffusionFunctionWithControl.apply(time, space, controls[controlIndex]);
-				valuesForControls[controlIndex] = 0.5 * volatility * volatility * secondSpaceDerivative + drift * firstSpaceDerivative
-						+ runningRewardFunction.apply(time, space, controls[controlIndex]);
-			}
-			//..and take the control that maximizes them
-			maximizingControls[timeIndex - 1][0]=controls[UsefulMethodsForArrays.getRandomMaximizingIndex(valuesForControls)];
-			
-			//we repeat the same for the other space indices
-			for (int spaceIndex = 1; spaceIndex < numberOfSpaceSteps; spaceIndex ++) {
+			for (int spaceIndex = 0; spaceIndex <= numberOfSpaceSteps; spaceIndex ++) {
 				space += spaceStep;
-				//central differences
-				firstSpaceDerivative = (updatedValueFunction[timeIndex][spaceIndex + 1]-updatedValueFunction[timeIndex ][spaceIndex - 1])/(2*spaceStep);
-				secondSpaceDerivative = (updatedValueFunction[timeIndex][spaceIndex + 1]-2*updatedValueFunction[timeIndex][spaceIndex]
-						+updatedValueFunction[timeIndex][spaceIndex - 1])/(spaceStep*spaceStep);
-				valuesForControls = new double[numberOfControls];
+				double firstSpaceDerivative = computeFirstDerivative(timeIndex, spaceIndex);
+				double secondSpaceDerivative = computeSecondDerivative(timeIndex, spaceIndex);
+				double[] valuesForControls = new double[numberOfControls];
 				
 				//we compute the values of all the controls..
 				for (int controlIndex = 0; controlIndex < numberOfControls; controlIndex ++) {
@@ -223,33 +204,47 @@ public class PolicyImprovement {
 				//..and take the control that maximizes them
 				maximizingControls[timeIndex - 1][spaceIndex]=controls[UsefulMethodsForArrays.getRandomMaximizingIndex(valuesForControls)];
 			}
-			
-			//now we consider the final space value, that is, x[numberOfSpaceSteps+1]
-			firstSpaceDerivative = (updatedValueFunction[timeIndex][numberOfSpaceSteps]-updatedValueFunction[timeIndex][numberOfSpaceSteps - 1])/spaceStep;
-			
-			//the second derivative is approximated as the (also approximated) one at x[numberOfSpaceSteps]
-			secondSpaceDerivative = (updatedValueFunction[timeIndex][numberOfSpaceSteps]-2*updatedValueFunction[timeIndex][numberOfSpaceSteps - 1]
-					+updatedValueFunction[timeIndex][numberOfSpaceSteps - 2])/(spaceStep*spaceStep);
-
-			valuesForControls = new double[numberOfControls];
-			
-			//we compute the values of all the controls..
-			for (int controlIndex = 0; controlIndex < numberOfControls; controlIndex ++) {
-				double drift = driftFunctionWithControl.apply(time, space, controls[controlIndex]);
-				double volatility = diffusionFunctionWithControl.apply(time, space, controls[controlIndex]);
-				valuesForControls[controlIndex] = 0.5 * volatility * volatility * secondSpaceDerivative + drift * firstSpaceDerivative
-						+ runningRewardFunction.apply(time, space, controls[controlIndex]);
-			}
-
-			//..and take the control that maximizes them
-			maximizingControls[timeIndex - 1][numberOfSpaceSteps]=controls[UsefulMethodsForArrays.getRandomMaximizingIndex(valuesForControls)];
-			
+						
 			time += timeStep;
 		}
 		return maximizingControls;
 	}
 
+	/*
+	 * This method computes the approximated first derivative of updatedValueFunction at the point in time and space
+	 * determined by timeIndex and spaceIndex
+	 */
+	private double computeFirstDerivative(int timeIndex, int spaceIndex) {
 
+		if (spaceIndex == 0) {
+			return (updatedValueFunction[timeIndex][1]-updatedValueFunction[timeIndex][0])/spaceStep;
+		} else if (spaceIndex == numberOfSpaceSteps) {
+			return (updatedValueFunction[timeIndex][numberOfSpaceSteps]-updatedValueFunction[timeIndex][numberOfSpaceSteps - 1])/spaceStep;
+		}
+		else {
+			return (updatedValueFunction[timeIndex][spaceIndex + 1]-updatedValueFunction[timeIndex ][spaceIndex - 1])/(2*spaceStep);
+		}
+	}
+	
+	/*
+	 * This method computes the approximated second derivative of updatedValueFunction at the point in time and space
+	 * determined by timeIndex and spaceIndex
+	 */
+	private double computeSecondDerivative(int timeIndex, int spaceIndex) {
+
+		if (spaceIndex == 0) {
+			return (updatedValueFunction[timeIndex][2]-2*updatedValueFunction[timeIndex][1]+updatedValueFunction[timeIndex][0])/(spaceStep*spaceStep);
+
+		} else if (spaceIndex == numberOfSpaceSteps) {
+			return (updatedValueFunction[timeIndex][numberOfSpaceSteps]-2*updatedValueFunction[timeIndex][numberOfSpaceSteps - 1]
+					+updatedValueFunction[timeIndex][numberOfSpaceSteps - 2])/(spaceStep*spaceStep);
+		}
+		else {
+			return (updatedValueFunction[timeIndex][spaceIndex + 1]-2*updatedValueFunction[timeIndex][spaceIndex]
+					+updatedValueFunction[timeIndex][spaceIndex - 1])/(spaceStep*spaceStep);
+		}
+	}
+	
 	/**
 	 * It returns the value function as a matrix of doubles.
 	 * 
