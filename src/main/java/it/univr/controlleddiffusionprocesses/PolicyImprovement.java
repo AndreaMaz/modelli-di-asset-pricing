@@ -281,7 +281,7 @@ public class PolicyImprovement {
 	 */
 	public double[] getValueFunctionAtGivenTime(double time) throws Exception {
 
-		int timeIndex = (int) Math.round(finalTime / timeStep);
+		int timeIndex = (int) Math.round(time / timeStep);
 
 		if (updatedValueFunction == null) {
 			computeSolutionAndOptimalControl();
@@ -298,7 +298,7 @@ public class PolicyImprovement {
 	 */
 	public double[] getOptimalControlAtGivenTime(double time) throws Exception {
 
-		int timeIndex = (int) Math.round(finalTime / timeStep);
+		int timeIndex = (int) Math.round(time / timeStep);
 
 		if (updatedValueFunction == null) {
 			computeSolutionAndOptimalControl();

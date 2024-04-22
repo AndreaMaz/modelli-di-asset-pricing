@@ -13,11 +13,10 @@ import net.finmath.util.TriFunction;
  * @author Andrea Mazzon
  *
  */
-public class PolicyImprovementTest {
+public class PolicyImprovement2DControlsTest {
 	
 	public static void main(String[] args) throws Exception {
 		
-		DecimalFormat formatterForControl = new DecimalFormat("0.00");
 		DecimalFormat formatterForValue = new DecimalFormat("0.000");
 		
 		/*
@@ -30,26 +29,26 @@ public class PolicyImprovementTest {
 		
 		double exponentForFinalRewardFunction = 0.5;		
 		
-		double optimalControl = (constantDrift - interestRate)/(constantSigma*constantSigma*(1-exponentForFinalRewardFunction));
-
-		System.out.println("Analytic optimal control " +  formatterForControl.format(optimalControl));
-		System.out.println();
 		
 		//functions for the SDE
-		TriFunction<Double, Double, Double, Double> driftFunctionWithControl = (t,x,a) -> x*(a*(constantDrift-interestRate)+interestRate);
-		TriFunction<Double, Double, Double, Double> diffusionFunctionWithControl = (t,x,a) -> x*a*constantSigma;
+		TriFunction<Double, Double, Double, Double> driftFunctionWithControl = (x,a,k) -> x*(a*(constantDrift-interestRate)+interestRate-k);
+		TriFunction<Double, Double, Double, Double> diffusionFunctionWithControl = (x,a,k) -> x*a*constantSigma;
 		
 		//functions for the rewards
-		TriFunction<Double, Double, Double, Double> runningRewardFunction = (t,x,a) -> 0.0;
+		TriFunction<Double, Double, Double, Double> runningRewardFunction = (x,a,k) -> Math.pow(x*k,exponentForFinalRewardFunction);
 		DoubleUnaryOperator finalRewardFunction = x -> Math.pow(x,exponentForFinalRewardFunction);
 		
 		//function for the left border. In our case, the left border is zero
-		DoubleBinaryOperator functionLeft = (t, a) -> 0.0;
+		DoubleBinaryOperator functionLeft = (t, x) -> 0.0;
 		
 		//definition of the intervals
-		double leftEndControlInterval = 0.0;
-		double rightEndControlInterval = 6;
-		double controlStep = 0.01;
+		double leftEndSecondControlInterval = 0.0;
+		double rightEndSecondControlInterval = 10;
+		double controlStep = 0.1;
+		
+		//definition of the intervals
+		double leftEndFirstControlInterval = 0.0;
+		double rightEndFirstControlInterval = 6;
 		
 		double leftEndSpaceInterval = 0.0;
 		double rightEndSpaceInterval = 10;
@@ -58,18 +57,20 @@ public class PolicyImprovementTest {
 		double finalTime = 3.0;
 		double timeStep = 0.1;
 		
-		double requiredPrecision = 0.001;
-		int maxNumberIterations = 20;
+		double requiredPrecision = 0.1;
+		int maxNumberIterations = 4;
 		
-		PolicyImprovement optimizer = new PolicyImprovement(driftFunctionWithControl, diffusionFunctionWithControl, runningRewardFunction, finalRewardFunction, functionLeft,
-				leftEndControlInterval,  rightEndControlInterval,  controlStep,  leftEndSpaceInterval, rightEndSpaceInterval,  spaceStep,  finalTime,  timeStep, requiredPrecision, maxNumberIterations);
+		PolicyImprovement2DControls optimizer = new PolicyImprovement2DControls(driftFunctionWithControl, diffusionFunctionWithControl, runningRewardFunction,
+				finalRewardFunction, functionLeft, leftEndFirstControlInterval,  rightEndFirstControlInterval,  controlStep,leftEndSecondControlInterval, 
+				rightEndSecondControlInterval,  controlStep,  leftEndSpaceInterval, rightEndSpaceInterval,  spaceStep,  finalTime,  timeStep, requiredPrecision,
+				maxNumberIterations);
 		
-		double beta = 0.5 * constantSigma * constantSigma * optimalControl * optimalControl * exponentForFinalRewardFunction * (exponentForFinalRewardFunction - 1)
-				+ (constantDrift-interestRate)*exponentForFinalRewardFunction*optimalControl+interestRate*exponentForFinalRewardFunction;
-		
+		double A = (constantDrift-interestRate)*(constantDrift-interestRate)/(2*constantSigma*constantSigma)*exponentForFinalRewardFunction/(1-exponentForFinalRewardFunction)
+				+interestRate*exponentForFinalRewardFunction;
+				
 		
 		//we check the value function and the control at every combination of these time and space values
-		double[] timeToCheck = {0.5, 1.0, 1.5, 2.0, 2.5};
+		double[] timeToCheck = {0.2, 0.4, 0.6, 0.8, 1.0};
 		
 		double[] spaceToCheck = {0.5, 1.0, 1.5, 2.0, 2.5, 3.0}; 
 		
@@ -79,17 +80,14 @@ public class PolicyImprovementTest {
 				
 				System.out.println("Time: " + time + " Space: " + space);
 				
-				double valueFunction = Math.exp(time*beta)*Math.pow(space, exponentForFinalRewardFunction);
+				double valueFunction = Math.pow((1+(1-exponentForFinalRewardFunction)/A)*Math.exp(time*A/(1-exponentForFinalRewardFunction))-(1-exponentForFinalRewardFunction)/A
+						,1-exponentForFinalRewardFunction)*Math.pow(space, exponentForFinalRewardFunction);
 				
 				System.out.println("Analytic value function " +  formatterForValue.format(valueFunction));
 
 				double value = optimizer.getValueFunctionAtTimeAndSpace(time, space);
 								
 				System.out.println("Approximated value function " + formatterForValue.format(value));
-				
-				double control = optimizer.getOptimalControlAtTimeAndSpace(time, space);
-				
-				System.out.println("Approximated control " + formatterForControl.format(control));
 				
 				System.out.println();
 			}
