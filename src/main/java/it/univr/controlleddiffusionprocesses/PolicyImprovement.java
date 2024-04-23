@@ -188,7 +188,6 @@ public class PolicyImprovement {
 			double space = leftEndSpaceInterval;
 			
 			for (int spaceIndex = 0; spaceIndex <= numberOfSpaceSteps; spaceIndex ++) {
-				space += spaceStep;
 				double firstSpaceDerivative = computeFirstDerivative(timeIndex, spaceIndex);
 				double secondSpaceDerivative = computeSecondDerivative(timeIndex, spaceIndex);
 				double[] valuesForControls = new double[numberOfControls];
@@ -203,6 +202,7 @@ public class PolicyImprovement {
 				
 				//..and take the control that maximizes them
 				maximizingControls[timeIndex - 1][spaceIndex]=controls[UsefulMethodsForArrays.getRandomMaximizingIndex(valuesForControls)];
+				space += spaceStep;
 			}
 						
 			time += timeStep;
